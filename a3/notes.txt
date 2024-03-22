@@ -1,8 +1,0 @@
-Let's say a regular language is described in a set builder notation, we want to do the following:
-1. Convert it to a DFA or NFA
-2. For a given string, check if it is in the language by simulating the DFA or NFA
-
-To simulate a DFA
-1. We start at the start state
-2. For each character in the string, we follow the transition for that character
-3. If we reach the end of the string and we are in an accepting state, then the string is in the language

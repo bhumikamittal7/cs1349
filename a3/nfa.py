@@ -65,65 +65,46 @@ def read_nfa_description(file_name):
 
     return states, alphabet, start_state, accept_states, transitions
 
-#==================================== Validity of the NFA ====================================
-# a nfa is a valid nfa if:
-# 1. the start state is in the set of states
-# 2. the accept states are a subset of the states
-# 3. the alphabet is not empty
-# 4. for each state and symbol, there is at least one transition
-# def is_nfa(states, alphabet, start_state, accept_states, transitions):
-#     if start_state not in states:
-#         return False
-#     if not set(accept_states).issubset(set(states)):
-#         return False
-#     if len(alphabet) == 0:
-#         return False
-#     for state in states:
-#         for symbol in alphabet:
-#             transitions_from_state = [t for t in transitions if t[0] == state and t[1] == symbol]
-#             if len(transitions_from_state) == 0:
-#                 return False
-#     return True
+#==================================== Designing NFA ====================================
+class NFA:
+    def __init__(self, states, alphabet, start_state, accept_states, transitions):
+        self.states = states
+        self.alphabet = alphabet
+        self.start_state = start_state
+        self.accept_states = accept_states
+        self.transitions = transitions
+        self.validate_transition_function()
 
-#==================================== Simulating the NFA ====================================
-#we have to run parallel simulations for each possible transition and check if any of them accepts the string
-# we also need to check for epsilon transitions
+    # Validation function
+    def validate_transition_function(self):
+        transition_states = set()
+        for transition in self.transitions:
+            if transition[0] not in self.states or transition[2] not in self.states:
+                raise Exception('Invalid transition states.')
+            transition_states.add((transition[0], transition[1]))
+        if len(transition_states) != len(self.transitions):
+            raise Exception('Duplicate transitions detected.')
 
-def epsilon_closure(state, transitions):
-    closure = set()
-    closure.add(state)
-    stack = [state]
-    while len(stack) > 0:
-        current_state = stack.pop()
-        for transition in transitions:
-            if transition[0] == current_state and transition[1] == 'epsilon' and transition[2] not in closure:
-                closure.add(transition[2])
-                stack.append(transition[2])
-    return closure
+    def transition(self, state, symbol):
+        possible_transitions = []
+        for transition in self.transitions:
+            if transition[0] == state and transition[1] == symbol:
+                possible_transitions.append(transition[2])
+        return possible_transitions
 
-def simulate_nfa(states, alphabet, start_state, accept_states, transitions, string):
-    current_states = epsilon_closure(start_state, transitions)
-    for symbol in string:
-        next_states = set()
-        for state in current_states:
-            next_states = next_states.union(epsilon_closure(state, transitions))
-        current_states = set()
-        for state in next_states:
-            for transition in transitions:
-                if transition[0] in next_states and transition[1] == symbol:
-                    current_states = current_states.union(epsilon_closure(transition[2], transitions))
-    current_states = set()
-    for state in current_states:
-        current_states = current_states.union(epsilon_closure(state, transitions))
-    res = False
-    for state in current_states:
-        if state in accept_states:
-            res = True
-            break
-    if res:
-        print(f'The string "{string}" is in the language')
-    else:
-        print(f'The string "{string}" is not in the language')
+    def simulate(self, string):
+        return self.accept(self.start_state, string)
+
+    def accept(self, state, string):
+        if len(string) == 0:
+            return state in self.accept_states
+        for next_state in self.transition(state, string[0]):
+            if self.accept(next_state, string[1:]):
+                return True
+        for next_state in self.transition(state, 'eps'):
+            if self.accept(next_state, string):
+                return True
+        return False
 
 # ==================================== Main Function ====================================
 def main():
@@ -136,16 +117,16 @@ def main():
         return
     
     states, alphabet, start_state, accept_states, transitions = read_nfa_description(file_name)
-
-    # if is_nfa(states, alphabet, start_state, accept_states, transitions) == False:
-    #     print('The NFA is not valid')
-    #     return
-    
     choice = input('Do you want to check if a string is in the language? (y/n) ')
 
     while choice == 'y':
         string = input('Enter a string to check if it is in the language: ')
-        simulate_nfa(states, alphabet, start_state, accept_states, transitions, string)
+        nfa = NFA(states, alphabet, start_state, accept_states, transitions)
+        result = nfa.simulate(string)
+        if result:
+            print('Yayy! The string is in the language generated by the NFA!🎉')
+        else:
+            print('Ahh! The string is not in the language generated by the NFA!😢')
         choice = input('Do you want to check if another string is in the language? (y/n) ')
 
     print('Thank you for using the NFA simulator')
